@@ -23,6 +23,7 @@ export default function AdminGate({ token, children }){
   const [status, setStatus] = useState('loading');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [testInfo, setTestInfo] = useState('');
 
   const check = async () => {
     try{
@@ -68,18 +69,38 @@ export default function AdminGate({ token, children }){
     }
   };
 
+  const clearSession = () => {
+    try{ localStorage.removeItem('token'); localStorage.removeItem('email'); }catch{}
+    window.location.reload();
+  };
+
+  const ping = async () => {
+    try{
+      setTestInfo('Łączenie z API…');
+      const r = await fetch(`${API}/test`);
+      const txt = await r.text();
+      setTestInfo(`OK: ${txt.slice(0,180)}…`);
+    }catch(e){
+      setTestInfo('Błąd połączenia z /test');
+    }
+  };
+
   if(status==='loading') return <div className="mt-6 text-slate-300 text-sm">Sprawdzanie dostępu administratora…</div>;
   if(status==='denied') return (
     <div className="mt-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-200 text-sm space-y-3">
       <div>Access denied. Admin only.{reason ? ` (${reason})` : ''}</div>
-      {token && (
-        <div className="flex items-center gap-2">
-          <button onClick={check} className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 text-white">Spróbuj ponownie</button>
+      <div className="text-xs text-slate-400">API: <code className="break-all">{API}</code></div>
+      <div className="flex flex-wrap items-center gap-2">
+        <button onClick={check} className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 text-white">Spróbuj ponownie</button>
+        {token && (
           <button onClick={tryBootstrap} disabled={busy} className="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 disabled:opacity-50">
             {busy ? 'Przyznawanie…' : 'Utwórz pierwszego admina'}
           </button>
-        </div>
-      )}
+        )}
+        <button onClick={clearSession} className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 text-white">Wyczyść sesję i zaloguj ponownie</button>
+        <button onClick={ping} className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 text-white">Test API</button>
+      </div>
+      {testInfo && <div className="text-xs text-slate-400 whitespace-pre-wrap break-all">{testInfo}</div>}
       <p className="text-slate-400">Jeśli widzisz "Admin already exists", zaloguj się na konto z rolą admin lub poproś o nadanie uprawnień.</p>
     </div>
   );
